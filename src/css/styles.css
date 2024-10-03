@@ -156,6 +156,30 @@
   letter-spacing: 0.48px;
 }
 
+.loader-btn {
+  font-family: 'Montserrat', sans-serif;
+  font-size: 16px;
+  font-weight: 500;
+  letter-spacing: 0.64px;
+  color: #fff;
+  min-width: 125px;
+  height: 40px;
+  margin: 0 auto;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background-color: #4e75ff;
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+.loader-box {
+  position: absolute;
+  bottom: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
 @media only screen and (max-width: 1024px) {
   .container {
     padding: 0 50px;
