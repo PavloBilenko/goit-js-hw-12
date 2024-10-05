@@ -1,4 +1,3 @@
-//
 import { createGalleryCardTemplate } from './js/render-functions';
 import { fetchPhotos } from './js/pixabay-api';
 import iziToast from 'izitoast';
@@ -15,15 +14,16 @@ const simpleLightbox = new SimpleLightbox('.js-gallery a', {
   captionsData: 'alt',
   overlayOpacity: 1,
 });
-let currentPage = 1;
-let searchedValue = ''; 
-let quantityElements = 0;
 
+let currentPage = 1;
+let searchedValue = '';
+let totalHitsLoaded = 0;
+let totalHits = 0;
 const onSearchFormSubmit = async event => {
   try {
     event.preventDefault();
 
-    searchedValue = searchFormEl.elements.user_query.value.trim(); 
+    searchedValue = searchFormEl.elements.user_query.value.trim();
 
     if (searchedValue === '') {
       iziToast.warning({
@@ -32,24 +32,28 @@ const onSearchFormSubmit = async event => {
       });
       return;
     }
-    galleryEl.innerHTML = ''; 
-    quantityElements = 0;
-    loaderEl.classList.remove('is-hidden'); 
+
+    galleryEl.innerHTML = '';
+    totalHitsLoaded = 0;
+    loaderEl.classList.remove('is-hidden');
     currentPage = 1;
+
     const response = await fetchPhotos(searchedValue, currentPage);
     const data = response.data;
+
     if (!data.hits || data.hits.length === 0) {
       iziToast.error({
         message:
           'Sorry, there are no images matching your search query. Please try again!',
         position: 'bottomRight',
       });
-      galleryEl.innerHTML = '';
       searchFormEl.reset();
-      loaderEl.classList.add('is-hidden'); 
+      loaderEl.classList.add('is-hidden');
       loadMoreBtnEl.classList.add('is-hidden');
       return;
     }
+
+    totalHits = data.totalHits;
 
     const galleryCardsTemplate = data.hits
       .map(imgDetails => createGalleryCardTemplate(imgDetails))
@@ -58,7 +62,11 @@ const onSearchFormSubmit = async event => {
     simpleLightbox.refresh();
     loadMoreBtnEl.classList.remove('is-hidden');
     searchFormEl.reset();
-    quantityElements += response.data.hits.length;
+    totalHitsLoaded += data.hits.length;
+
+    if (totalHitsLoaded >= totalHits) {
+      loadMoreBtnEl.classList.add('is-hidden');
+    }
   } catch (err) {
     console.log(err);
     iziToast.error({
@@ -66,24 +74,27 @@ const onSearchFormSubmit = async event => {
       position: 'bottomRight',
     });
   } finally {
-    loaderEl.classList.add('is-hidden'); 
+    loaderEl.classList.add('is-hidden');
   }
 };
 
 const onLoadMoreBtnClick = async event => {
   try {
-    currentPage++; 
-    const response = await fetchPhotos(searchedValue, currentPage); 
+    currentPage++;
+
+    const response = await fetchPhotos(searchedValue, currentPage);
     const data = response.data;
 
     if (!data.hits || data.hits.length === 0) {
       return;
     }
+
     const galleryCardsTemplate = data.hits
       .map(imgDetails => createGalleryCardTemplate(imgDetails))
       .join('');
     galleryEl.insertAdjacentHTML('beforeend', galleryCardsTemplate);
     simpleLightbox.refresh();
+
     const { height: cardHeight } =
       galleryEl.firstElementChild.getBoundingClientRect();
 
@@ -91,9 +102,10 @@ const onLoadMoreBtnClick = async event => {
       top: cardHeight * 2,
       behavior: 'smooth',
     });
-    quantityElements += response.data.hits.length;
 
-    if (Math.ceil(data.totalHits / 15) === currentPage) {
+    totalHitsLoaded += data.hits.length;
+
+    if (totalHitsLoaded >= totalHits) {
       iziToast.show({
         message: "We're sorry, but you've reached the end of search results.",
         position: 'topRight',
@@ -109,5 +121,6 @@ const onLoadMoreBtnClick = async event => {
     console.log(err);
   }
 };
+
 searchFormEl.addEventListener('submit', onSearchFormSubmit);
 loadMoreBtnEl.addEventListener('click', onLoadMoreBtnClick);
